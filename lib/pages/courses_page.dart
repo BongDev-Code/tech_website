@@ -502,9 +502,9 @@ class _CoursesPageState extends State<CoursesPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ).copyWith(
-                          elevation: MaterialStateProperty.resolveWith<double>(
-                            (Set<MaterialState> states) {
-                              if (states.contains(MaterialState.hovered)) {
+                          elevation: WidgetStateProperty.resolveWith<double>(
+                            (Set<WidgetState> states) {
+                              if (states.contains(WidgetState.hovered)) {
                                 return 6;
                               }
                               return 2;
@@ -532,7 +532,7 @@ class _CoursesPageState extends State<CoursesPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant,
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(

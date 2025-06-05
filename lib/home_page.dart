@@ -270,9 +270,9 @@ class _HomePageState extends State<HomePage> {
           foregroundColor: Colors.white,
           elevation: 4,
         ).copyWith(
-          elevation: MaterialStateProperty.resolveWith<double>(
-            (Set<MaterialState> states) {
-              if (states.contains(MaterialState.hovered)) {
+          elevation: WidgetStateProperty.resolveWith<double>(
+            (Set<WidgetState> states) {
+              if (states.contains(WidgetState.hovered)) {
                 return 8;
               }
               return 4;

@@ -14,6 +14,9 @@ class _ProfilePageState extends State<ProfilePage>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+  bool _isLoading = true;
+  bool _isError = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -39,13 +42,72 @@ class _ProfilePageState extends State<ProfilePage>
       curve: Curves.easeOutCubic,
     ));
 
-    _controller.forward();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _isError = false;
+      _errorMessage = null;
+    });
+
+    try {
+      // Simulate data loading
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      _controller.forward();
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _isError = true;
+        _errorMessage = 'Failed to load profile data. Please try again.';
+      });
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Widget _buildErrorWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 48,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _errorMessage ?? 'An error occurred',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: _initializeData,
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -104,62 +166,79 @@ class _ProfilePageState extends State<ProfilePage>
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 40),
-                _buildAnimatedProfileSection(context, user),
-                const SizedBox(height: 40),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildAnimatedSection(
-                        context,
-                        'Education',
-                        [
-                          _buildAnimatedEducationCard(context, user),
-                        ],
+      body: _isLoading
+          ? Center(
+              child: CircularProgressIndicator(
+                color: colorScheme.primary,
+              ),
+            )
+          : _isError
+              ? _buildErrorWidget()
+              : RefreshIndicator(
+                  onRefresh: _initializeData,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const SizedBox(height: 40),
+                            _buildAnimatedProfileSection(context, user),
+                            const SizedBox(height: 40),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 24),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _buildAnimatedSection(
+                                    context,
+                                    'Education',
+                                    [
+                                      _buildAnimatedEducationCard(
+                                          context, user),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _buildAnimatedSection(
+                                    context,
+                                    'Skills',
+                                    [
+                                      _buildAnimatedSkillsCard(context, user),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _buildAnimatedSection(
+                                    context,
+                                    'Certifications',
+                                    [
+                                      _buildAnimatedCertificationsCard(
+                                          context, user),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 24),
+                                  _buildAnimatedSection(
+                                    context,
+                                    'Current Courses',
+                                    [
+                                      ...user.enrolledCourses.map((course) =>
+                                          _buildAnimatedCourseCard(
+                                              context, course)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 40),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 24),
-                      _buildAnimatedSection(
-                        context,
-                        'Skills',
-                        [
-                          _buildAnimatedSkillsCard(context, user),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      _buildAnimatedSection(
-                        context,
-                        'Certifications',
-                        [
-                          _buildAnimatedCertificationsCard(context, user),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      _buildAnimatedSection(
-                        context,
-                        'Current Courses',
-                        [
-                          ...user.enrolledCourses.map((course) =>
-                              _buildAnimatedCourseCard(context, course)),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -715,7 +794,7 @@ class _ProfilePageState extends State<ProfilePage>
   Widget _buildAnimatedProgressBar(BuildContext context, double progress) {
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 1000),
-      tween: Tween(begin: 0.0, end: progress),
+      tween: Tween(begin: 0.0, end: progress.clamp(0.0, 1.0)),
       builder: (context, value, child) {
         return ClipRRect(
           borderRadius: BorderRadius.circular(10),
@@ -776,6 +855,8 @@ class _ProfilePageState extends State<ProfilePage>
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w500,
                         ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   Text(
                     'Score: ${assessment.score}/${assessment.maxScore}',
